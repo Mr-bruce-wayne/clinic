@@ -1,0 +1,13 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\{Appointment,Doctor,Patient,Queue};use Illuminate\Http\Request;use Illuminate\Validation\Rule;
+class AppointmentController extends Controller {
+ public function index(Request $r){$appointments=Appointment::with(['patient','doctor','queue'])->when($r->date,fn($q,$d)=>$q->whereDate('scheduled_at',$d),fn($q)=>$q->whereDate('scheduled_at',today()))->when($r->status,fn($q,$s)=>$q->where('status',$s))->orderBy('scheduled_at')->paginate(15)->withQueryString();return view('appointments.index',compact('appointments'));}
+ public function create(){return view('appointments.form',['appointment'=>new Appointment,'patients'=>Patient::orderBy('name')->get(),'doctors'=>Doctor::where('active',true)->orderBy('name')->get()]);}
+ public function store(Request $r){$d=$this->validateData($r);$d['created_by']=$r->user()->id;$a=Appointment::create($d);return redirect()->route('appointments.index')->with('success','Appointment booked.');}
+ public function edit(Appointment $appointment){return view('appointments.form',['appointment'=>$appointment,'patients'=>Patient::orderBy('name')->get(),'doctors'=>Doctor::where('active',true)->orWhere('id',$appointment->doctor_id)->orderBy('name')->get()]);}
+ public function update(Request $r,Appointment $appointment){$appointment->update($this->validateData($r,$appointment));return back()->with('success','Appointment rescheduled.');}
+ public function status(Request $r,Appointment $appointment){$d=$r->validate(['status'=>['required',Rule::in(['Scheduled','Confirmed','Checked In','In Progress','Completed','Cancelled','No Show'])]]);$appointment->update($d);return back()->with('success','Appointment status updated.');}
+ public function checkin(Appointment $appointment){abort_unless(in_array($appointment->status,['Scheduled','Confirmed']),422);$queueNo=(Queue::whereDate('queue_date',today())->max('queue_number')??0)+1;Queue::firstOrCreate(['appointment_id'=>$appointment->id],['queue_date'=>today(),'queue_number'=>$queueNo,'status'=>'Waiting','checked_in_at'=>now()]);$appointment->update(['status'=>'Checked In']);return back()->with('success','Patient checked in. Queue number '.$queueNo);}
+ private function validateData(Request $r,?Appointment $a=null):array{$d=$r->validate(['patient_id'=>'required|exists:patients,id','doctor_id'=>'required|exists:doctors,id','scheduled_at'=>['required','date','after_or_equal:now',Rule::unique('appointments','scheduled_at')->where('doctor_id',$r->input('doctor_id'))->ignore($a?->id)],'reason'=>'required|string|max:255','notes'=>'nullable|string|max:2000','status'=>['sometimes',Rule::in(['Scheduled','Confirmed','Checked In','In Progress','Completed','Cancelled','No Show'])]]);$d['status']=$d['status']??'Scheduled';return $d;}
+}
