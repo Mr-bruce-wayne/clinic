@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Saacid Clinic Management System
 
 A Laravel 12 clinic operations starter with staff sign-in and roles, patient records, doctor directory, appointment scheduling, reception queue check-ins, consultations, prescriptions, and invoice payments. It is built for PHP 8.2+ and can use XAMPP MySQL.
@@ -57,3 +58,6 @@ Do not use the seeded credentials in a public deployment. Set `APP_DEBUG=false`,
 ## Verification
 
 The project was scaffolded on Laravel 12 using PHP 8.2. Run `php artisan route:list`, `php artisan migrate --seed`, and `php artisan test` after configuring the local database. MySQL migrations have not been run automatically so this project will not modify a developer database without their action.
+=======
+# clinic
+>>>>>>> 758c8210f7a9fba3264b2a7d7f901650fb94d3da
